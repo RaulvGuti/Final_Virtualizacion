@@ -1,0 +1,14 @@
+.git
+.gitignore
+.dockerignore
+.env
+.env.*
+mock/
+tests/
+k8s/
+*.md
+*.zip
+*.log
+__pycache__/
+*.pyc
+.DS_Store

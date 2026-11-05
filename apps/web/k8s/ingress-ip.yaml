@@ -1,0 +1,20 @@
+# OPCIONAL: Fernando debe revisarlo antes de aplicar. Acceso por IP de Traefik/MetalLB.
+# No tiene host: puede entrar en conflicto con rutas / de otras apps del clúster.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kubelab-web-ip
+  labels:
+    app.kubernetes.io/name: kubelab-web
+spec:
+  ingressClassName: traefik
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kubelab-web
+                port:
+                  name: http
