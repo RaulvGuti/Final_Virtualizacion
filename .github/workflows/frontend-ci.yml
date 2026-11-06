@@ -52,7 +52,7 @@ jobs:
       - name: Validar configuración Nginx con contenedor de producción
         run: |
           docker build -t kubelab-web:ci .
-          docker run --rm -d --name kubelab-web-ci -p 127.0.0.1:18080:80 --add-host kubelab-api:127.0.0.1 kubelab-web:ci
+          docker run --rm -d --name kubelab-web-ci -p 127.0.0.1:18080:80 --add-host api-service:127.0.0.1 kubelab-web:ci
           trap 'docker rm -f kubelab-web-ci >/dev/null 2>&1 || true' EXIT
           for i in $(seq 1 20); do if curl -fsS http://127.0.0.1:18080/healthz; then break; fi; sleep 1; done
           curl -fsS http://127.0.0.1:18080/healthz

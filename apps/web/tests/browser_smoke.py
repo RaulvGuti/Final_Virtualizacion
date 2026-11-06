@@ -135,7 +135,7 @@ def run():
                 page.locator('#refresh-products').click()
                 expect(page.locator('#api-status-label')).to_have_text('API sin conexión')
                 expect(page.locator('#error-banner')).to_be_visible()
-                expect(page.locator('#error-message')).to_contain_text('no está disponible')
+                expect(page.locator('#error-message')).to_contain_text('no están disponibles')
                 page.evaluate('window.__testFailFetch = ""')
                 page.locator('#retry-products').click()
                 expect(page.locator('#products-tbody tr')).to_have_count(2)
