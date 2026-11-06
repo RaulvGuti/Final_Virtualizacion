@@ -1,0 +1,38 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: kubelab-api-ready
+  namespace: default
+spec:
+  replacePath:
+    path: /ready
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: kubelab-lan
+  namespace: default
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: 'Path(`/api/ready`)'
+      priority: 30
+      middlewares:
+        - name: kubelab-api-ready
+      services:
+        - name: api-service
+          port: 3000
+    - kind: Rule
+      match: 'Path(`/api`) || PathPrefix(`/api/`)'
+      priority: 20
+      services:
+        - name: api-service
+          port: 3000
+    - kind: Rule
+      match: 'PathPrefix(`/`)'
+      priority: 1
+      services:
+        - name: kubelab-web
+          port: 80

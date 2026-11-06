@@ -1,0 +1,145 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubelab-prometheus
+  namespace: default
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 30s
+      scrape_timeout: 5s
+    scrape_configs:
+      - job_name: prometheus
+        static_configs:
+          - targets: ['127.0.0.1:9090']
+      - job_name: kubelab-api
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: [default]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app, __meta_kubernetes_pod_container_port_number, __meta_kubernetes_pod_phase]
+            regex: 'api;3000;Running'
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubelab-prometheus
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kubelab-prometheus
+  namespace: default
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kubelab-prometheus
+  namespace: default
+subjects:
+  - kind: ServiceAccount
+    name: kubelab-prometheus
+    namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kubelab-prometheus
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kubelab-prometheus-data
+  namespace: default
+spec:
+  storageClassName: local-path
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubelab-prometheus
+  namespace: default
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: kubelab-prometheus
+  template:
+    metadata:
+      labels:
+        app: kubelab-prometheus
+    spec:
+      serviceAccountName: kubelab-prometheus
+      nodeSelector:
+        kubernetes.io/hostname: kubelab-worker1
+      securityContext:
+        fsGroup: 65534
+      containers:
+        - name: prometheus
+          image: docker.io/prom/prometheus:v3.13.5
+          imagePullPolicy: Never
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --storage.tsdb.retention.time=24h
+            - --storage.tsdb.retention.size=1GB
+          ports:
+            - name: http
+              containerPort: 9090
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            initialDelaySeconds: 15
+          resources:
+            requests:
+              cpu: 50m
+              memory: 192Mi
+            limits:
+              cpu: 300m
+              memory: 320Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus/prometheus.yml
+              subPath: prometheus.yml
+              readOnly: true
+            - name: data
+              mountPath: /prometheus
+      volumes:
+        - name: config
+          configMap:
+            name: kubelab-prometheus
+        - name: data
+          persistentVolumeClaim:
+            claimName: kubelab-prometheus-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubelab-prometheus
+  namespace: default
+spec:
+  selector:
+    app: kubelab-prometheus
+  ports:
+    - name: http
+      port: 9090
+      targetPort: http
