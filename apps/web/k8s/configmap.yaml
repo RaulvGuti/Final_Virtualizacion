@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubelab-web-config
+  labels:
+    app.kubernetes.io/name: kubelab-web
+data:
+  # Service interno Express documentado en apps/api/API-CONTRACT.md.
+  API_UPSTREAM: 'api-service:3000'

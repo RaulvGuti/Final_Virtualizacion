@@ -1,0 +1,63 @@
+name: CI/CD Pipeline - API Backend
+
+on:
+  push:
+    paths:
+      - 'apps/api/**'
+      - '.github/workflows/ci.yml'
+    branches: [ main, dev ]
+  pull_request:
+    paths:
+      - 'apps/api/**'
+    branches: [ main ]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+
+    steps:
+      - name: Checkout Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: apps/api/package-lock.json
+
+      - name: Instalar Dependencias
+        run: npm ci
+
+      - name: Ejecutar Pruebas Automatizadas (Jest)
+        run: npm test
+
+      - name: Autenticar en GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extraer Metadata de Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/kubelab-api
+          tags: |
+            type=sha,format=short
+            type=ref,event=branch
+
+      - name: Construir y Publicar Imagen Docker
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+          context: apps/api
+          file: apps/api/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

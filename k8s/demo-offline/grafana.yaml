@@ -1,0 +1,167 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubelab-grafana-provisioning
+  namespace: default
+data:
+  datasource.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        uid: kubelab-prometheus
+        type: prometheus
+        access: proxy
+        url: http://kubelab-prometheus:9090
+        isDefault: true
+        editable: false
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: KubeLab
+        type: file
+        options:
+          path: /var/lib/grafana/dashboards
+  kubelab.json: |
+    {
+      "uid": "kubelab-api",
+      "title": "KubeLab - API",
+      "schemaVersion": 39,
+      "refresh": "30s",
+      "time": {"from": "now-15m", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "title": "Réplicas de la API accesibles a Prometheus",
+          "type": "stat",
+          "gridPos": {"h": 5, "w": 24, "x": 0, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "kubelab-prometheus"},
+          "targets": [{"refId": "A", "expr": "sum(up{job=\"kubelab-api\"}) or vector(0)", "instant": true}]
+        },
+        {
+          "id": 2,
+          "title": "Disponibilidad por Pod",
+          "type": "timeseries",
+          "gridPos": {"h": 9, "w": 24, "x": 0, "y": 5},
+          "datasource": {"type": "prometheus", "uid": "kubelab-prometheus"},
+          "targets": [{"refId": "A", "expr": "up{job=\"kubelab-api\"}", "legendFormat": "{{pod}}"}]
+        }
+      ]
+    }
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kubelab-grafana-data
+  namespace: default
+spec:
+  storageClassName: local-path
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubelab-grafana
+  namespace: default
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: kubelab-grafana
+  template:
+    metadata:
+      labels:
+        app: kubelab-grafana
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: kubelab-worker1
+      securityContext:
+        fsGroup: 472
+      containers:
+        - name: grafana
+          image: docker.io/grafana/grafana:13.3.0
+          imagePullPolicy: Never
+          env:
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kubelab-grafana-admin
+                  key: password
+            - name: GF_PLUGINS_PREINSTALL_DISABLED
+              value: "true"
+            - name: GF_ANALYTICS_REPORTING_ENABLED
+              value: "false"
+            - name: GF_ANALYTICS_CHECK_FOR_UPDATES
+              value: "false"
+            - name: GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES
+              value: "false"
+          ports:
+            - name: http
+              containerPort: 3000
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 384Mi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/grafana
+            - name: provisioning
+              mountPath: /etc/grafana/provisioning/datasources/kubelab.yaml
+              subPath: datasource.yaml
+              readOnly: true
+            - name: provisioning
+              mountPath: /etc/grafana/provisioning/dashboards/kubelab.yaml
+              subPath: dashboards.yaml
+              readOnly: true
+            - name: provisioning
+              mountPath: /var/lib/grafana/dashboards
+              readOnly: true
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: kubelab-grafana-data
+        - name: provisioning
+          configMap:
+            name: kubelab-grafana-provisioning
+            items:
+              - key: datasource.yaml
+                path: datasource.yaml
+              - key: dashboards.yaml
+                path: dashboards.yaml
+              - key: kubelab.json
+                path: kubelab.json
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubelab-grafana
+  namespace: default
+spec:
+  selector:
+    app: kubelab-grafana
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http

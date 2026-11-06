@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - api.yaml
+configMapGenerator:
+  - name: api-init-sql
+    files:
+      - init.sql
+patches:
+  - target:
+      kind: Deployment
+      name: api
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: api
+      spec:
+        template:
+          spec:
+            containers:
+              - name: api
+                imagePullPolicy: Never
+                volumeMounts:
+                  - name: api-init-sql
+                    mountPath: /app/dist/db/init.sql
+                    subPath: init.sql
+                    readOnly: true
+            volumes:
+              - name: api-init-sql
+                configMap:
+                  name: api-init-sql

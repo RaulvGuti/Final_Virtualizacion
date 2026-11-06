@@ -1,0 +1,11 @@
+KubeLab local verification — 2026-11-04, hora Guatemala
+API mock HTTP: 5/5 PASS
+Browser Chromium (fetch HTTP mediado por Python): 9 comprobaciones PASS
+Nginx nativo: nginx -t, proxy, GET/POST, health, fallback PASS
+Manifiestos YAML: 5 parseados, checks básicos PASS
+GitHub Actions workflow: YAML parse PASS
+JavaScript: node --check PASS
+Python: compileall PASS
+Docker image build: NOT RUN (docker unavailable)
+GHCR publication: NOT RUN (no GitHub repo configured)
+K3s real / API Raúl / router Cisco: NOT RUN

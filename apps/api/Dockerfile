@@ -1,34 +1,32 @@
 # syntax=docker/dockerfile:1
 
-# ---------- Etapa 1: build (compila TypeScript) ----------
-FROM node:22.12.0-alpine3.21 AS build
+FROM node:18-alpine AS builder
+
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package*.json ./
 RUN npm ci
 
 COPY tsconfig.json ./
 COPY src ./src
-RUN npm run build \
- && npm prune --omit=dev
+COPY scripts ./scripts
 
-# ---------- Etapa 2: runtime (ligera, sin devDependencies ni código fuente) ----------
-FROM node:22.12.0-alpine3.21 AS runtime
-ENV NODE_ENV=production \
-    PORT=3000
+RUN npm run build
+
+FROM node:18-alpine AS runner
+
 WORKDIR /app
 
-COPY --from=build --chown=node:node /app/package.json ./
-COPY --from=build --chown=node:node /app/node_modules ./node_modules
-COPY --from=build --chown=node:node /app/dist ./dist
+ENV NODE_ENV=production
 
-# Usuario sin privilegios incluido en la imagen oficial
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/dist/db/init.sql ./dist/db/init.sql
+
 USER node
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:3000/health || exit 1
-
-# node directamente (no npm) para que reciba SIGTERM de Kubernetes
 CMD ["node", "dist/index.js"]

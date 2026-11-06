@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f9fc">
+  <meta name="description" content="KubeLab Inventory: administración de productos conectada a una API REST.">
+  <title>KubeLab | Inventario</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <script defer src="/js/config.js"></script>
+  <script defer src="/js/app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Menú lateral">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="26" height="26" fill="none"><path d="m16 3 11 6.5v13L16 29 5 22.5v-13L16 3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="m5.5 9.7 10.5 6 10.5-6M16 15.7V28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </span>
+        <span class="brand-type"><strong>KubeLab</strong><small>INVENTORY</small></span>
+      </div>
+      <div class="sidebar-group-title">ESPACIO DE TRABAJO</div>
+      <nav aria-label="Navegación principal">
+        <a class="nav-link active" href="/" aria-current="page">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          Inventario
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-footer-icon" aria-hidden="true">⚙</div>
+        <div><strong>Proyecto universitario</strong><span>Frontend · Versión 1.0</span></div>
+      </div>
+    </aside>
+
+    <div class="main-column">
+      <header class="topbar">
+        <div class="breadcrumb"><span>Workspace</span><span class="breadcrumb-sep">/</span><strong>Inventario</strong></div>
+        <div id="api-status" class="connection-badge" data-status="checking" role="status" aria-live="polite"><span class="status-dot"></span><span id="api-status-label">Conectando con API…</span></div>
+      </header>
+
+      <main id="main-content" class="main-content">
+        <div class="page-heading">
+          <div>
+            <div class="eyebrow">GESTIÓN DE INVENTARIO</div>
+            <h1>Productos</h1>
+            <p>Administra tu catálogo y mantén la información siempre actualizada.</p>
+          </div>
+          <button id="add-product" class="btn btn-primary" type="button">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Nuevo producto
+          </button>
+        </div>
+
+        <section class="stats-grid" aria-label="Resumen del inventario">
+          <article class="stat-card">
+            <div class="stat-top"><span>Total de productos</span><span class="stat-icon blue" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 2 9 5-9 5-9-5 9-5ZM3 7v10l9 5 9-5V7M12 12v10"/></svg></span></div>
+            <strong id="stat-products" class="stat-number">—</strong>
+            <span class="stat-caption">Productos registrados</span>
+          </article>
+          <article class="stat-card">
+            <div class="stat-top"><span>Unidades disponibles</span><span class="stat-icon purple" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16v13H4zM7 4h10v3M8 13h8M12 10v6"/></svg></span></div>
+            <strong id="stat-stock" class="stat-number">—</strong>
+            <span class="stat-caption">Sumadas en el inventario</span>
+          </article>
+          <article class="stat-card">
+            <div class="stat-top"><span>Valor del inventario</span><span class="stat-icon green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 9h.01M18 15h.01"/></svg></span></div>
+            <strong id="stat-value" class="stat-number value-number">—</strong>
+            <span class="stat-caption">Precio × existencias</span>
+          </article>
+        </section>
+
+        <section class="inventory-panel" aria-labelledby="catalog-title">
+          <div class="panel-heading">
+            <div><h2 id="catalog-title">Catálogo de productos</h2><p>Consulta, edita y gestiona los artículos registrados.</p></div>
+            <button id="refresh-products" class="btn btn-secondary btn-small" type="button" aria-label="Actualizar productos">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.5 8A7 7 0 0 1 19 7l1 5M4 12l1 5a7 7 0 0 0 12.5-1"/></svg>
+              Actualizar
+            </button>
+          </div>
+          <div class="toolbar">
+            <label class="search-field" for="search-products">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+              <input id="search-products" type="search" placeholder="Buscar por nombre o descripción…" autocomplete="off">
+            </label>
+            <span id="result-count" class="result-count">Cargando…</span>
+          </div>
+          <div id="error-banner" class="error-banner" role="alert" hidden><span id="error-message"></span><button id="retry-products" class="text-button" type="button">Reintentar</button></div>
+          <div id="loading-state" class="loading-state" role="status" aria-live="polite"><span class="spinner" aria-hidden="true"></span> Consultando productos…</div>
+          <div id="table-wrapper" class="table-wrapper" hidden>
+            <table class="products-table">
+              <thead><tr><th scope="col">PRODUCTO</th><th scope="col">PRECIO</th><th scope="col">EXISTENCIAS</th><th scope="col">VALOR TOTAL</th><th scope="col" class="actions-col">ACCIONES</th></tr></thead>
+              <tbody id="products-tbody"></tbody>
+            </table>
+          </div>
+          <div id="empty-state" class="empty-state" hidden>
+            <span class="empty-illustration" aria-hidden="true"><svg viewBox="0 0 56 56" fill="none" stroke="currentColor" stroke-width="2"><path d="m28 6 20 11v22L28 50 8 39V17L28 6ZM8 17l20 11 20-11M28 28v22"/><path d="m18 11 20 11"/></svg></span>
+            <h3 id="empty-title">Todavía no hay productos</h3>
+            <p id="empty-description">Agrega tu primer producto para comenzar a utilizar el inventario.</p>
+            <button id="empty-add-product" class="btn btn-primary btn-small" type="button">Agregar producto</button>
+          </div>
+          <div class="panel-footer"><span id="footer-count">—</span><span>Datos obtenidos desde la API REST</span></div>
+        </section>
+        <footer class="site-footer"><span>KubeLab · Plataforma de gestión de inventario</span><span>Proxmox + K3s + GitOps</span></footer>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="product-dialog" class="modal" aria-labelledby="modal-title">
+    <form id="product-form" novalidate>
+      <div class="modal-header"><div><span class="eyebrow">INVENTARIO</span><h2 id="modal-title">Nuevo producto</h2><p id="modal-subtitle">Completa los datos del artículo.</p></div><button class="icon-button" id="close-form" type="button" aria-label="Cerrar formulario">×</button></div>
+      <div class="modal-content">
+        <div class="form-field"><label for="product-name">Nombre del producto <span aria-hidden="true">*</span></label><input id="product-name" name="name" type="text" maxlength="120" placeholder="Ej. Teclado mecánico" required><small>Máximo 120 caracteres</small></div>
+        <div class="form-field"><label for="product-description">Descripción</label><textarea id="product-description" name="description" rows="3" maxlength="500" placeholder="Descripción breve del producto (opcional)"></textarea></div>
+        <div class="form-grid">
+          <div class="form-field"><label for="product-price">Precio (GTQ) <span aria-hidden="true">*</span></label><input id="product-price" name="price" type="number" min="0" max="999999999" step="0.01" placeholder="0.00" required></div>
+          <div class="form-field"><label for="product-stock">Existencias <span aria-hidden="true">*</span></label><input id="product-stock" name="stock" type="number" min="0" max="999999999" step="1" placeholder="0" required></div>
+        </div>
+        <p id="form-error" class="form-error" role="alert" hidden></p>
+      </div>
+      <div class="modal-footer"><button id="cancel-form" class="btn btn-secondary" type="button">Cancelar</button><button id="save-product" class="btn btn-primary" type="submit">Guardar producto</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="delete-dialog" class="modal modal-delete" aria-labelledby="delete-title">
+    <div class="modal-header"><div><span class="delete-icon" aria-hidden="true">!</span><h2 id="delete-title">¿Eliminar producto?</h2><p id="delete-description">Esta acción no se puede deshacer.</p></div></div>
+    <p id="delete-error" class="form-error delete-error" role="alert" hidden></p>
+    <div class="modal-footer"><button id="cancel-delete" class="btn btn-secondary" type="button">Cancelar</button><button id="confirm-delete" class="btn btn-danger" type="button">Sí, eliminar</button></div>
+  </dialog>
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>
